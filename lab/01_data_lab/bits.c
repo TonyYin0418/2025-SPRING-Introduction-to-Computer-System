@@ -143,7 +143,8 @@ NOTES:
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+  // x^y = (x|y) & ~(x&y)
+  return ~(~x&~y) & ~(x&y);
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -152,9 +153,8 @@ int bitXor(int x, int y) {
  *   Rating: 1
  */
 int tmin(void) {
-
-  return 2;
-
+  // 0x80000000, -2^{31}
+  return (1 << 31);
 }
 //2
 /*
@@ -165,7 +165,13 @@ int tmin(void) {
  *   Rating: 1
  */
 int isTmax(int x) {
-  return 2;
+  // x should be (1<<31)-1
+
+  //   0111111 (x)
+  //   1000000 (x+1)
+  // ^=1111111 == -1
+
+  return !!(x+1) & !( ((x+1)^x) +1 );
 }
 /* 
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -176,7 +182,10 @@ int isTmax(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+  // 1010 1010 ... 1010 = 0xAAAAAAAA, 0xAA(8 digits)
+  int A = 0xAA;
+  A = (A << 8) | (A << 16) | (A << 24) | 0xAA;
+  return !((x & A) ^ A); //判断x&A是否与A相等
 }
 /* 
  * negate - return -x 
@@ -186,7 +195,7 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+  return (~x) + 1;
 }
 //3
 /* 
@@ -199,7 +208,9 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+  int left =  (x + (~0x30) + 1) >> 31; // x - 0x30 >= 0
+  int right = (0x39 + (~x) + 1) >> 31; // 0x39 - x >= 0
+  return (!left) & (!right); //expect both 0
 }
 /* 
  * conditional - same as x ? y : z 
@@ -209,7 +220,10 @@ int isAsciiDigit(int x) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+  int x_neq_zero = !!x;
+  int A = ~(x_neq_zero) + 1;
+  int B = ~(!x_neq_zero) + 1;
+  return (A&y) + (B&z);
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -219,7 +233,19 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+  // y - x >= 0
+  int x_sign = !!(x >> 31);
+  int y_sign = !!(y >> 31);
+  int diff = (x_sign ^ y_sign);
+  // 1. diff sign
+  // x > 0, y < 0 -> FALSE
+  // x < 0, y > 0 -> TRUE
+  int diff_res = (x_sign << y_sign);
+  // 2. same sign
+  int z = y + (~x) + 1;
+  int sign_z = (z >> 31);
+  int same_res = (!sign_z) | (!z);
+  return (diff & diff_res) | (!diff & same_res);
 }
 //4
 /* 

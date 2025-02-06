@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"path": "./preference"
+		},
+		{
+			"path": "lab"
+		},
+		{
+			"path": "notes"
+		}
+	],
+	"settings": {},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			
+
+		]
+	}
+}
