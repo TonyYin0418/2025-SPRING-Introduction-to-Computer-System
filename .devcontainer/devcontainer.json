@@ -1,0 +1,7 @@
+{
+	"image": "mcr.microsoft.com/devcontainers/universal:2",
+	"postCreateCommand": "sudo apt update && sudo apt install -y gcc-multilib",
+	"features": {
+		"ghcr.io/devcontainers-extra/features/neofetch:1": {}
+	}
+}
