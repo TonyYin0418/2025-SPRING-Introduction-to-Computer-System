@@ -257,8 +257,11 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+  int minus_x = (~x) + 1;
+  int sign = (x | minus_x) >> 31; // == -1 or 0
+  return sign + 1;
 }
+
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
  *  Examples: howManyBits(12) = 5
@@ -272,7 +275,30 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+  // 1Bits: [-1, 0]
+  // 2Bits: [-2, 1] 10   01
+  // 3Bits: [-4, 3] 100  011
+  // 4Bits: [-8, 7] 1000 0111
+  int sign_x, high_16, high_8, high_4, high_2, high_1, cnt;
+  // 1. 统一正负的情况
+  // 00101 正数找第一个1
+  // 11111 -> 00000 负数直接取反，[-8, -1] <-> [0, 7] 与正数一一对应
+  sign_x = (x >> 31);
+  x = (x ^ sign_x);
+  // 2. 要找最高位的1，可以倍增求前导零长度。
+  high_16 = (!(x >> 15)) << 4;
+  x = x << high_16;
+  high_8 = (!(x >> 23)) << 3;
+  x = x << high_8;
+  high_4 = (!(x >> 27)) << 2;
+  x = x << high_4;
+  high_2 = (!(x >> 29)) << 1;
+  x = x << high_2;
+  high_1 = (!(x >> 30));
+  
+  cnt = high_16 + high_8 + high_4 + high_2 + high_1;
+  // 3. 计算答案，最高位的1的位次再加一，ans=32-cnt
+  return 32 + (~cnt + 1);
 }
 //float
 /* 
