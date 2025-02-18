@@ -313,7 +313,24 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 unsigned floatScale2(unsigned uf) {
-  return 2;
+  // 31, 30-23, 22-0
+  unsigned sign = (uf & 0x80000000) >> 31;
+  unsigned exp  = (uf & 0x7F800000) >> 23;
+  unsigned frac = (uf & 0x007FFFFF);
+  unsigned ans  = uf;
+  if (exp == 0xFF) ans = uf; // f = NaN or INF
+  else if(exp == 0) { // f = 0
+    frac <<= 1; 
+    if(frac & 0x00800000) { // 进位
+      exp = 1;
+      frac = frac & 0x007FFFFF;
+    }
+  }
+  else {
+    exp = exp + 1;
+    if(exp == 255) frac = 0;
+  }
+  return (sign << 31) | (exp << 23) | (frac);
 }
 /* 
  * floatFloat2Int - Return bit-level equivalent of expression (int) f
@@ -327,8 +344,19 @@ unsigned floatScale2(unsigned uf) {
  *   Max ops: 30
  *   Rating: 4
  */
-int floatFloat2Int(unsigned uf) {
-  return 2;
+int floatFloat2Int(unsigned uf) { // 向零舍入
+  int bias = 127;
+  int sign = (uf >> 31);
+  int exp = ((uf & 0x7F800000) >> 23) - bias; // [1, 254] -> [-126, 127]
+  int frac = (uf & 0x007FFFFF); // 23 bits
+  if(exp < 0) return 0;
+  else if(exp >= 31) return 0x80000000u;
+  else {
+    frac = frac | (0x800000);
+    frac = (frac >> (23 - exp));
+    if(sign) return -frac;
+    else return frac;
+  }
 }
 /* 
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
@@ -344,5 +372,12 @@ int floatFloat2Int(unsigned uf) {
  *   Rating: 4
  */
 unsigned floatPower2(int x) {
-    return 2;
+  // 2.0^x = 1.0 * 2^x
+  int bias = 127; // [1, 254] -> [-126, 127]
+  if(x > 127) return 0x7f800000;
+  else if(x < -126) return 0;
+  else {
+    int exp = x + 127;
+    return (exp << 23);
+  }
 }
