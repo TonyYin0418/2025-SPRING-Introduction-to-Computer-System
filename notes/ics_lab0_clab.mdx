@@ -1,0 +1,229 @@
+---
+title: '计算机系统基础 C Programming Lab'
+publishDate: 2025-02-20
+description: '武汉大学2025春季学期 计算机系统基础 Lab0 - C Programming Lab'
+tags:
+  - whu
+  - csapp
+
+language: '中文'
+---
+
+import { Aside } from 'astro-pure/user'
+
+<Aside type="danger">思路仅供参考，请在完成前独立思考，并请勿尝试抄袭代码</Aside>
+
+C Programming Lab 是计算机系统基础的第一个 lab，主要考察 C 语言编程能力，包括一些内存管理、用指针实现队列数据结构的方法。
+
+在解压`.tar`压缩包，进入工作目录后，就可以在 x86 架构的 Linux 环境下完成此 lab 了。
+
+对于运行在 Apple Silicon 芯片上的 MacOS 系统，可以参考 [这篇博文](https://www.tonyyin.top/blog/csapp_env) 进行配置环境。
+
+另外，也可以考虑使用：
+
+- WSL2
+- 云服务器
+- 希冀平台提供的云服务器
+
+## 写前须知
+
+### 文件说明
+
+只需要修改并提交这三个文件，
+
+- `Makefile`
+- `queue.h`：加入想引入的新字段。
+- `queue.c`：队列函数的实现。
+
+其他文件的用法详见 README 文档。
+
+### 使用qtest
+
+`qtest` 提供了一个命令解释器，可用来创建和操作队列。运行以下命令查看命令行选项列表：
+
+```
+./qtest -h
+```
+
+当您执行 `./qtest` 后，也可以输入 `help` 来查看可用命令列表。比如：
+
+```bash
+./qtest
+
+new
+ih 3
+ih 1
+ih 2
+```
+
+如果出现错误，则会自动输出错误信息，供调试。
+
+### 自动测评程序
+
+在初步调试之后，下面的命令用来检查代码的正确性：
+
+```bash
+make test
+```
+
+这里实际上是在 `make` 之后运行了 `./driver.py` 脚本，注意这是在 `Python2` 标准下编写的。
+
+另外，这些本地测试点在 `/traces` 目录下的 `.cmd` 文件中，可供调试参考。
+
+## 更新 Makefile
+
+首先要修正压缩包中提供的 `Makefile` 文件，根据 `README`和 `Makefile`中的提示可完成。
+
+1. 在 `qtest` 的依赖项中添加 `queue.o`：
+
+```makefile
+qtest: qtest.c report.c console.c harness.c queue.o
+```
+
+2. 在链接过程中加入 `queue.o`：
+
+```makefile
+$(CC) $(CFLAGS) -o qtest qtest.c report.c console.c harness.c queue.o
+```
+
+要验证 `Makefile` 是否正确，在终端运行 `make`，如果正确，则应该得到：
+
+```
+gcc -O0 -g -Wall -Werror -o qtest qtest.c report.c console.c harness.c queue.o
+tar -cf handin.tar queue.c queue.h Makefile
+```
+
+类似的结果，没有任何错误信息。
+
+## 更新 queue.h
+
+要在 `queue_t` 类型中，声明 `tail` 和 `size` 两个元素，原因：
+
+1. 由于 `q_insert_tail` 要求 $\mathcal{O}(1)$ 复杂度，不能遍历整个链表
+2. 用于实现 `q_size`函数。
+
+```c
+typedef struct {
+    list_ele_t *head;
+    list_ele_t *tail;
+    int size;
+} queue_t;
+```
+
+## q_new
+
+**功能**：创建一个新的空队列。
+
+易错点：
+
+- 检查 malloc 返回值是否为 NULL
+- **初始化**：队列的 `size` 设置为 0，`head` 和 `tail`指针都初始化为 NULL
+
+## q_free
+
+**功能**：释放队列使用的所有内存。
+
+易错点：
+
+- 遍历链表，并逐一释放元素，同时最后释放队列结构本身。
+
+- 特殊处理 q 为 NULL 的情况（之后函数也一样）
+
+## q_insert_head
+
+**功能**：尝试在队列头部插入一个新元素。
+
+易错点：
+
+- 特殊处理 q 为 NULL 的情况
+- 检查 `malloc` 返回值是否为 NULL
+- 如果只有一个元素，要更新 tail 指针。
+
+## q_insert_tail
+
+**功能**：尝试在队列头部插入一个新元素。
+
+跟上面没啥区别。
+
+## q_remove_head
+
+**功能**：从队列头部移除一个元素，并在移除成功时将值存储到 `vp`.
+
+易错点：
+
+- 特殊处理队列为空、q 为 NULL 的情况
+- 特殊处理 vp 为 NULL 的情况
+
+## q_size
+
+**功能**：返回队列中元素的数量。
+
+易错点：
+
+- 特殊处理 q 为 NULL 的情况
+
+## q_reverse
+
+**功能**：反转队列元素。
+
+易错点：
+
+- 实现这个功能无需双向链表
+- 注意设定 q->head->next = NULL，避免成环
+
+## 评分结果
+
+将工作目录的 `handle.tar` 上传到希冀平台，
+
+```bash
+# 进入目录
+cd /mnt/cgshare
+
+# 解压缩
+tar xvf handin.tar
+
+# 复制到桌面
+cp Makefile queue.c queue.h ~/Desktop
+```
+
+提交评测，得到以下结果
+
+```
+---    Trace        Points
++++ TESTING trace trace-00-make    
+---    trace-00-make    7/7
++++ TESTING trace trace-01-ops    
+---    trace-01-ops    6/6
++++ TESTING trace trace-02-ops    
+---    trace-02-ops    6/6
++++ TESTING trace trace-03-ops    
+---    trace-03-ops    6/6
++++ TESTING trace trace-04-ops    
+---    trace-04-ops    6/6
++++ TESTING trace trace-05-ops    
+---    trace-05-ops    6/6
++++ TESTING trace trace-06-robust    
+---    trace-06-robust    7/7
++++ TESTING trace trace-07-robust    
+---    trace-07-robust    7/7
++++ TESTING trace trace-08-robust    
+---    trace-08-robust    7/7
++++ TESTING trace trace-09-malloc    
+---    trace-09-malloc    7/7
++++ TESTING trace trace-10-malloc    
+---    trace-10-malloc    7/7
++++ TESTING trace trace-11-malloc    
+---    trace-11-malloc    7/7
++++ TESTING trace trace-12-perf    
+---    trace-12-perf    7/7
++++ TESTING trace trace-13-perf    
+---    trace-13-perf    7/7
++++ TESTING trace trace-14-perf    
+---    trace-14-perf    7/7
+```
+
+## 代码
+
+import { GithubCard } from 'astro-pure/advanced'
+
+<GithubCard repo='TonyYin0418/2025-SPRING-Introduction-to-Computer-System' />
