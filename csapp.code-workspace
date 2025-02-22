@@ -1,45 +1,17 @@
 {
 	"folders": [
 		{
-			"path": "./preference"
+			"path": "lab/00_c_lab"
 		},
 		{
-			"path": "lab"
+			"path": "lab/01_data_lab"
 		},
 		{
 			"path": "notes"
 		},
 		{
-			"path": "slide"
-		},
-		{
 			"path": "homework"
 		}
 	],
-	"settings": {},
-	"launch": {
-		"version": "0.2.0",
-		"configurations": [
-			{
-				"type": "cppdbg",
-				"request": "launch",
-				"name": "Launch Program",
-				"program": "${fileDirname}/echo",
-				"args": [],
-				"stopAtEntry": false,
-				"cwd": "${fileDirname}",
-				"environment": [],
-				"externalConsole": false,
-				"MIMode": "gdb",
-				"setupCommands": [
-					{
-						"description": "Enable pretty-printing for gdb",
-						"text": "-enable-pretty-printing",
-						"ignoreFailures": true
-					}
-				],
-				"preLaunchTask": "build"
-			}
-		]
-	}
+	"settings": {}
 }
