@@ -4,12 +4,13 @@ csapp 2.67
 */
 // A. 左右移运算的位数不能大于等于位宽，这是没有定义的行为
 // B. 
+/*
 int int_size_is_32()
 {   
     int set_msb = 1 << 31;
     int beyond_msb = set_msb << 1;
-    /* set_msb is nonzero when word size >= 32 
-        beyond_msb is zero when word size <= 32 */
+    // set_msb is nonzero when word size >= 32 
+    //    beyond_msb is zero when word size <= 32
     return set_msb && !beyond_msb;
 }
 // C.
@@ -17,15 +18,16 @@ int int_size_is_32()
 {
     int set_msb = (1 << 15 << 15 << 1);
     int beyond_msb = set_msb << 1;
-    /* set_msb is nonzero when word size >= 32
-        beyond_msb is zero when word size <= 32 */
+    // set_msb is nonzero when word size >= 32
+    //    beyond_msb is zero when word size <= 32
     return set_msb && !beyond_msb;
 }
-
+*/
 /*
 ex3-1
 csapp 2.61
 */
+/*
 #include <limits.h>
 #include <stdio.h>
 #include <iostream>
@@ -53,11 +55,12 @@ int main()
     printf("%d%d%d%d", A(x), B(x), C(x), D(x));
     return 0;
 }
-
+*/
 /*
 ex3-2
 csapp 2.63
 */
+/*
 #include <limits.h>
 #include <stdio.h>
 unsigned srl(unsigned x, int k)
@@ -66,7 +69,7 @@ unsigned srl(unsigned x, int k)
     unsigned xsra = (int)x >> k;
     // --- --- ---
     int w = sizeof(int) << 3;
-    int sign = (x >> (w - 1)); // 1负 0正
+    int sign = !!(x & (1<<(w-1))); // 1负 0正 不能有右移
     int mask = ~((sign<<(w-k))-1); // 最高k位 1111000000负 000000000正
     return xsra ^ mask;
 }
@@ -77,7 +80,7 @@ int sra(int x, int k)
     int xsrl = (unsigned)x >> k;
     // --- --- ---
     int w = sizeof(int) << 3;
-    int sign = ((unsigned)x >> (w - 1)); // 1负 0正 注意unsigend才正确
+    int sign = !!(x & (1<<(w-1))); // 1负 0正 不能有右移
     int mask = ~((sign<<(w-k))-1); // 最高k位 1111000000负 000000000正
     return xsrl | mask;
 }
@@ -89,12 +92,13 @@ int main()
     printf("%d %d", srl(x, k), sra(x, k));
     return 0;
 }
-
+*/
 
 /*
 ex3-3
 csapp 2.71.B
 */
+
 #include <limits.h>
 #include <stdio.h>
 
@@ -106,9 +110,10 @@ int xbyte(packed_t word, int bytenum)
     // 只能使用 <<, >> 和一个 - 运算符
     int shift_left = ((3 - bytenum) << 3);
     int signed_word = (word << shift_left);
-    int shift_right = shift_left + (bytenum << 3);
-    // return (signed_word >> shift_right);
-    return (word >> (bytenum << 3)) & 0xFF;
+    int shift_right = 24;
+    // 左移之后，最高八位即为所求，所以右移24位即可。
+    // 24 == shift_left + (bytenum << 3);
+    return (signed_word >> shift_right);
 }
 
 int main()
