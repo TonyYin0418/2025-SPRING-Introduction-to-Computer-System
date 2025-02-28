@@ -69,8 +69,8 @@ unsigned srl(unsigned x, int k)
     unsigned xsra = (int)x >> k;
     // --- --- ---
     int w = sizeof(int) << 3;
-    int sign = !!(x & (1<<(w-1))); // 1负 0正 不能有右移
-    int mask = ~((sign<<(w-k))-1); // 最高k位 1111000000负 000000000正
+    int sign = !!(x & (1<<(w-1))); // 1负 0正
+    int mask = ~((sign<<(w-k-1)<<1)-1); // 最高k位 1111000000负 000000000正 k==0时w-k=32 不能左移32位
     return xsra ^ mask;
 }
 
@@ -80,8 +80,8 @@ int sra(int x, int k)
     int xsrl = (unsigned)x >> k;
     // --- --- ---
     int w = sizeof(int) << 3;
-    int sign = !!(x & (1<<(w-1))); // 1负 0正 不能有右移
-    int mask = ~((sign<<(w-k))-1); // 最高k位 1111000000负 000000000正
+    int sign = !!(x & (1<<(w-1))); // 1负 0正
+    int mask = ~((sign<<(w-k-1)<<1)-1); // 最高k位 1111000000负 000000000正 k==0时w-k=32 不能左移32位
     return xsrl | mask;
 }
 
