@@ -1,15 +1,19 @@
 {
 	"folders": [
 		{
+			"name": "00_c_lab",
 			"path": "lab/00_c_lab"
 		},
 		{
+			"name": "01_data_lab",
 			"path": "lab/01_data_lab"
 		},
 		{
+			"name": "notes",
 			"path": "notes"
 		},
 		{
+			"name": "homework",
 			"path": "homework"
 		}
 	],
