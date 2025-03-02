@@ -1,0 +1,29 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Attach to QEMU GDB Server",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/qtest",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false,
+            "preLaunchTask": "",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "initCommands": [
+                "target create ${workspaceFolder}/qtest",
+                "gdb-remote localhost:1234"
+            ],
+            "postRunCommands": [
+                "process handle -p true -s false -n false SIGBUS",
+                "process handle -p true -s false -n false SIGSEGV",
+                "process handle -p true -s false -n false SIGILL",
+                "process handle -p true -s false -n false SIGPIPE"
+            ],
+            "MIAppArgs": "",
+            "targetArchitecture": "x86_64"
+        }
+    ]
+}

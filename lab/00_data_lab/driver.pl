@@ -42,12 +42,6 @@ sub usage {
 # Main routine
 ##############
 my $login = getlogin() || (getpwuid($<))[0] || "unknown";
-open(fd, "stuID") or die "$0: Could not find studentID file.\n";
-    my $line=<fd>;
-    chomp($line);
-    $login=$line;
-close(fd); 
-
 my $tmpdir = "/var/tmp/datalab.$login.$$";
 my $diemsg = "The files are in $tmpdir.";
 
@@ -199,7 +193,8 @@ if ($USE_BTEST) {
     # Run btest
     $status = system("./btest -g > btest-zapped.out 2>&1");
     if ($status != 0) {
-	    }
+	die "$0: ERROR: btest check failed. $diemsg\n";
+    }
 }
 else {
     print "\n2. Running './bddcheck/check.pl -g' to determine correctness score.\n";
@@ -232,7 +227,8 @@ if ($USE_BTEST) {
     # Run btest
     $status = system("./btest -g -r 2 > btest-Zapped.out 2>&1");
     if ($status != 0) {
-	    }
+	die "$0: ERROR: Zapped btest failed. $diemsg\n";
+    }
 }
 else {
     print "\n4. Running './bddcheck/check.pl -g -r 2' to determine performance score.\n";

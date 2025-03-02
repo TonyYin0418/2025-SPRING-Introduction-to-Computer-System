@@ -1,0 +1,19 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "ssh",
+			"args": [
+				"tonyyin@orb",
+				"cd /mnt/mac/Users/tonyyin/dev/Course/csapp/lab/00_c_lab/"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": []
+		}
+	]
+}
