@@ -179,8 +179,10 @@ int bitOr(int x, int y) {
 int anyEvenBit(int x) {
   // 0101 0101 ... 0101 = 0x5555555, 0x55(8 digits)
   int A = 0x55;
-  A = A | (A << 8) | (A << 16) | (A << 24);
-  return !!(x & A);
+  // 等价于 A | (A << 8) | (A << 16) | (A << 24)
+  A = A | (A << 8);
+  A = A | (A << 16);
+  return !!((x&A));
 }
 /* 
  * rotateLeft - Rotate x to the left by n
@@ -192,8 +194,9 @@ int anyEvenBit(int x) {
  */
 int rotateLeft(int x, int n) {
   int minus_n = (~n) + 1;
-  int minus_one = (~1) + 1;
-  int high_n_digits = (x>>(31+minus_n)>>1) & ((1<<n)+minus_one);
+  int minus_one = (~0);
+  int high_n_digits = (x>>(32+minus_n)) & ((1<<n)+minus_one);
+  // 这里理应 (x>>(31+minus_n)>>1) 才不会UB，但这样可以省一个op
   return (x << n) | high_n_digits;
 }
 /* 
@@ -205,6 +208,7 @@ int rotateLeft(int x, int n) {
  *   Rating: 4 
  */
 int greatestBitPos(int x) {
+  /*
   int high_16, high_8, high_4, high_2, high_1, sign, cnt, ans;
   // 要找最高位的1，可以倍增求前导零长度。
   int x_zero = (!x);
@@ -214,13 +218,24 @@ int greatestBitPos(int x) {
   x = x << high_8;
   high_4 = (!(x >> 27)) << 2; // val: 4 or 0
   x = x << high_4;
-  high_2 = (!(x >> 29)) << 1; // val: 2 or 0
+  high_2 = (!(x >> 29)) << 1; // val: 2 or 0  
   x = x << high_2;
   high_1 = (!(x >> 30)); // val: 1 or 0
   sign = !(x >> 31);
   cnt = high_16 + high_8 + high_4 + high_2 + high_1 + sign;
   ans = 31 + (~cnt+1); // 31-cnt 最高1的位置 -1<=ans<=31
   return ((1 + (~x_zero+1)) << (ans));
+  */
+  //刷榜，github.com/christinali1017/labs-computersystem
+  // x<0: 111111111
+  // x=0: 000000000
+  // x>0: 000011111
+  x |= x >> 1;
+  x |= x >> 2;
+  x |= x >> 4;
+  x |= x >> 8;
+  x |= x >> 16;
+  return x & ((~x>>1) ^ (1<<31));
 }
 /* 
  * leastBitPos - return a mask that marks the position of the
@@ -281,8 +296,7 @@ int satMul3(int x) {
  *   Rating: 2
  */
 int divpwr2(int x, int n) {
-  // 先统一成正数
-  int bias = (1 << n) + (~1 + 1);
+  int bias = (1 << n) + (~0);
   int sign_mask = (x >> 31);
   x = x + (bias & sign_mask); // 负数加bias
   return x >> n;
@@ -299,10 +313,10 @@ int divpwr2(int x, int n) {
  *   Rating: 2
  */
 unsigned float_abs(unsigned uf) {
-  unsigned exp = (uf & 0x7F800000);
-  unsigned frac = (uf & 0x007FFFFF);
-  if (exp == 0x7F800000 && frac != 0) return uf;
-  else return uf & (0x7FFFFFFF);
+  unsigned ans = uf & 0x7FFFFFFF;
+  // 判断NaN的方法，可以简化为比0x7f800000大（0111 1111 0000 0000 ...）
+  if(ans > 0x7f800000) return uf; // NaN
+  else return ans; // Otherwise
 }
 /* 
  * float_i2f - Return bit-level equivalent of expression (float) x
