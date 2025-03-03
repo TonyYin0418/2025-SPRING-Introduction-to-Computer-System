@@ -46,6 +46,7 @@ open(fd, "stuID") or die "$0: Could not find studentID file.\n";
     my $line=<fd>;
     chomp($line);
     $login=$line;
+    printf "YOUR STUID IS: $login\n";
 close(fd); 
 
 my $tmpdir = "/var/tmp/datalab.$login.$$";

@@ -96,6 +96,18 @@ int test_subOK(int x, int y)
   long long ldiff = (long long) x - y;
   return ldiff == (int) ldiff;
 }
+/* revised on Mar. 2, 2025 */
+int test_satMul3(int x)
+{
+  volatile int a = x+x+x;
+  volatile int b = a/3;
+  if (b != x)
+    return x < 0 ? 0x80000000 : 0x7FFFFFFF;
+  else
+    return 3*x;
+}
+/* original version
+ * newer gcc will optimize this function
 int test_satMul3(int x)
 {
   if ((x+x+x)/3 != x)
@@ -103,6 +115,7 @@ int test_satMul3(int x)
   else
     return 3*x;
 }
+*/
 int test_divpwr2(int x, int n)
 {
     int p2n = 1<<n;
