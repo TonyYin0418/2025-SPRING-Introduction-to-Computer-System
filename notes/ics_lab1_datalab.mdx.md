@@ -1,0 +1,346 @@
+---
+title: '计算机系统基础 Data Lab'
+publishDate: 2025-03-04
+description: '武汉大学2025春季学期 计算机系统基础 Lab1 - Data Lab'
+tags:
+  - whu
+  - csapp
+
+language: '中文'
+---
+
+import { Aside } from 'astro-pure/user'
+
+<Aside type="danger">思路仅供参考，请在完成前独立思考，并请勿尝试抄袭代码</Aside>
+
+对于运行在 Apple Silicon 芯片上的 MacOS 系统，可以参考 [这篇博文](https://www.tonyyin.top/blog/csapp_env) 进行配置环境。
+
+## puzzle列表
+
+本次实验是对位操作级别的练习，题目包括：
+
+| 函数名称         | 题目描述                                           | 评分 | 最大操作次数 |
+|----------------|------------------------------------------------|------|------------|
+| bitOr(x, y)    | 只用 ~ 和 & 实现 x \| y                          | 1    |8|
+| anyEvenBit(x)  | 如果任意偶数位为1，则返回1                      | 2    | 12         |
+| rotateLeft(x, n)| 将 x 向左旋转 n 位（左移）                    | 3    | 25         |
+| greatestBitPos(x)| 返回最高位的 1 所在的掩码                       | 4    | 70         |
+| leastBitPos(x) | 返回最低位的 1 所在的掩码                       | 2    | 6          |
+| subOK(x, y)    | 判断 x - y 是否不会溢出                       | 3    | 20         |
+| satMul3(x)     | 计算 x * 3，并在溢出时饱和到 Tmin 或 Tmax      | 3    | 25         |
+| divpwr2(x, n)  | 计算 x / (2 ^ n)，向零方向取整              | 2    | 15         |
+| float_abs(uf)  | 返回浮点数的绝对值，如果是 NaN 则返回此浮点数    | 2    | 10         |
+| float_i2f(x)   | 将整数 x 转换成浮点数表示                     | 4    | 30         |
+
+---
+
+## bitOr
+
+- 题目描述：只用 ~ 和 & 实现 x | y
+- 允许的运算符：~ &
+- 最大操作次数：8
+- 评分：1
+
+使用了德摩根定律来实现按位或运算。
+$$
+x\text{ OR }y=\sim(\sim x\text{ AND } \sim y)
+$$
+代码实现：
+
+```c
+int bitOr(int x, int y) {
+	// x|y = ~(~x&~y)
+	return ~(~x&~y);
+}
+```
+
+---
+
+## anyEvenBit
+- 题目描述：如果任意偶数位为1，则返回1
+- 允许的运算符：! ~ & ^ | + << >>
+- 最大操作次数：12
+- 评分：2
+
+一个朴素的思路是：构建偶数位为 $1$，奇数位为 $0$ 的掩码 $\mathtt{0101\dots 010101}$，之后则容易解题。
+
+而在这个 Lab 中，要求可以用的最大常数值为 $\mathtt{0xFF}$，因此得到上述掩码的过程为：
+
+- 创建掩码 $A\leftarrow \mathtt{0x55}$
+- `A | (A << 8)`，得到 $\mathtt{0x5555}$，
+- `A | (A << 16)`，得到 $\mathtt{0x55555555}$.
+
+最终通过逻辑非运算符 `!!` 返回结果，以确保返回值为1或0。
+
+代码实现：
+
+```c
+int anyEvenBit(int x) {
+	// 0101 0101 ... 0101 = 0x5555555, 0x55(8 digits)
+	int A = 0x55;
+	A = A | (A << 8);
+	A = A | (A << 16);
+	return !!((x&A));
+}
+```
+
+---
+
+## rotateLeft
+- 题目描述：将 x 向左旋转 n 位
+- 允许的运算符：~ & ^ | + << >>
+- 最大操作次数：25
+- 评分：3 
+
+将 x 向左移 $n$ 位，会丢失高位信息，因此需要记录最高 $n$ 位的信息。
+
+记录 $n$ 位信息用掩码 $\mathtt{11\dots1100000000}$ 进行按位与运算即可。
+
+代码实现：
+
+```c
+int rotateLeft(int x, int n) {
+	int minus_n = (~n) + 1;
+	int minus_one = (~0);
+	int high_n_digits = (x>>(32+minus_n)) & ((1<<n)+minus_one);
+	// 这里貌似 (x>>(31+minus_n)>>1) 才不会UB，但这样可以省一个op
+	return (x << n) | high_n_digits;
+}
+```
+
+---
+
+## greatestBitPos
+- 题目描述：返回最高位的1所在的掩码
+- 允许的运算符：! ~ & ^ | + << >>
+- 最大操作次数：70
+- 评分：4
+
+原版的方法是：倍增求前导零长度：
+
+```c
+int x_zero = (!x);
+high_16 = (!(x >> 15)) << 4; // val: 16 or 0
+x = x << high_16;
+high_8 = (!(x >> 23)) << 3; // val: 8 or 0
+x = x << high_8;
+high_4 = (!(x >> 27)) << 2; // val: 4 or 0
+x = x << high_4;
+high_2 = (!(x >> 29)) << 1; // val: 2 or 0  
+x = x << high_2;
+high_1 = (!(x >> 30)); // val: 1 or 0
+sign = !(x >> 31);
+cnt = high_16 + high_8 + high_4 + high_2 + high_1 + sign;
+```
+
+相当于循环判断前 $2^k$ 位，是否全为 $0$，
+
+如果全为 $0$，就左移 $2^k$ 位，否则继续看 $2^{k-1}$ 位。 
+
+参考 [stackoverflow](https://stackoverflow.com/questions/21413565/create-a-mask-that-marks-the-most-significant-set-bit-using-only-bitwise-operat) 的方法，得到以下刷榜做法：
+
+为了找出最高位的1，采用了逻辑移位和逐步合并的策略：
+
+- 首先依次将 x 的高位信息合并，将所有 $1$ 填充到低位。
+- 根据代码来看，由于只有右移和按位或，高位的 $1$ 不可能丢失，同时低位会被填满，高位不受影响。
+- 最后，通过与 `(~x >> 1) ^ (1 << 31)`，得到最终的高位mask。
+
+这个方法很简洁，甚至不需要讨论正负：
+
+```c
+int greatestBitPos(int x) {
+	// x<0: 111111111
+	// x=0: 000000000
+	// x>0: 000011111
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	return x & ((~x>>1) ^ (1<<31));
+}
+```
+
+---
+
+## leastBitPos
+- 题目描述：返回最低位的1所在的掩码
+- 允许的运算符：! ~ & ^ | + << >>
+- 最大操作次数：6
+- 评分：2
+
+利用了 `x & (-x)` 求得。负数的补码可以被用于快速找到最低位的1。
+
+举例：
+$$
+\begin{array}{r|c}
+x &  \mathtt{000101101000}\\
+\sim x & \mathtt{111010010111}\\
+-x=\sim x+1 & \mathtt{111010011000}\\
+x\text{ AND }(-x) & \mathtt{000000001000}
+\end{array}
+$$
+由于 `-x=(~x)+1`，低位连续的零取反后变成连续的1，再加 $1$ 进位。
+
+```cpp
+int leastBitPos(int x) {
+	// lowbit, x & (-x)
+	return (~x+1) & x;
+}
+```
+
+---
+
+## subOK
+- 题目描述：判断 x - y 是否不会溢出
+- 允许的运算符：! ~ & ^ | + << >>
+- 最大操作次数：20
+- 评分：3
+
+首先计算 y 的相反数，然后将其与 x 相加，得到相减的结果。
+
+然后通过异或运算检查是否存在符号位变化，从而判断是否发生溢出。
+
+右移 $31$ 位，获取符号位，并返回布尔值。
+
+```c
+int subOK(int x, int y) {
+	int minus_y = (~y+1);
+	int result = x + minus_y;
+	int overflow = (x ^ y) & (x ^ result); // 只关注符号位
+	return !(overflow >> 31);
+}
+```
+
+---
+
+## satMul3
+- 题目描述：计算 x * 3，并在溢出时饱和到 Tmin 或 Tmax
+- 允许的运算符：! ~ & ^ | + << >>
+- 最大操作次数：25
+- 评分：3
+
+和上一题类似，注意到 $x\times 3$ 相当于两次加法，用**异或**，同时判断这两次加法是否溢出。
+
+得到 `overflow = ( (x^x2)|(x2^x3) ) >> 31` 的取值为：$\mathtt{0x0}$ 或 $\mathtt{0xFFFFFFFF}$.
+
+之后用 `~(sign ^ tmin)` 巧妙得到正/负溢出后的饱和值：`tmin` 或 `tmax`，例如：
+$$
+\begin{array}{r|c}
+\text{Tmin} & \mathtt{100000000000}\\
+\\
+\text{sign\_negative} & \mathtt{111111111111}\\
+\text{sign XOR Tmin} & \mathtt{011111111111}\\
+\\
+\text{sign\_positive} & \mathtt{000000000000}\\
+\text{sign XOR Tmin} & \mathtt{100000000000}\\
+
+
+\end{array}
+$$
+然后用 `overflow` 判断是否溢出，返回对应答案即可。
+
+---
+
+## divpwr2
+- 题目描述：计算 x/(2^n)，向零方向取整
+- 允许的运算符：! ~ & ^ | + << >>
+- 最大操作次数：15
+- 评分：2
+
+由于要向零舍入，
+
+- 正数：可以直接右移；
+- 负数：需要加偏移量 `bias` 之后右移，其中 $\text{bias}=2^n-1$.
+
+除了`(1 << n) + (~0)` 之外，还有一种用较少运算符计算 `bias` 的方法，无需再判断正负。
+
+详细见代码，原理没有区别，利用**异或**求得形如 $000011111$ 的掩码：
+
+```c
+int divpwr2(int x, int n) {
+	/*
+	下面原理与此相同，更巧妙地融合了sign，少2ops
+	bias = (1 << n) + (~0);
+	sign_mask = (x >> 31);
+	bias &= sign_mask;
+	*/
+	int bias = (x >> 31);
+	bias = bias ^ (bias << n);
+	x = x + bias; // 负数加bias
+	return x >> n;
+}
+```
+
+---
+
+## float_abs
+- 题目描述：返回浮点数的绝对值，如果是 NaN 则返回此浮点数
+- 允许的运算符：任何整数/无符号运算（包括 ||, &&），以及 if, while
+- 最大操作次数：10
+- 评分：2
+
+从这题开始，不再限制运算符，因此灵活很多。
+
+首先，通过与掩码 `0x7FFFFFFF` 进行按位与操作，清除符号位。
+
+接下来注意到，比 $\mathtt{0x7f800000,(0111\;1111\;1000\;0000\cdots)}$ 大的数，都是 `NaN`，判断即可。
+
+```c
+unsigned float_abs(unsigned uf) {
+	unsigned ans = uf & 0x7FFFFFFF;
+	// 判断NaN的方法，可以简化为比0x7f800000大（0111 1111 0000 0000 ...）
+	if(ans > 0x7f800000) return uf; // NaN
+	else return ans; // Otherwise
+}
+```
+
+---
+
+## float_i2f
+- 题目描述：将整数 x 转换成浮点数表示
+- 允许的运算符：任何整数/无符号运算（包括 ||, &&），以及 if, while
+- 最大操作次数：30
+- 评分：4
+
+在实现浮点数转换的过程中，先判断输入 x 的特性，特别关注符号处理和特殊情况（如 0 和最小值）。接着统一成正数的情况，通过位操作找出 x 的指数和尾数。
+
+注意难点在于**四舍五入的逻辑**。
+
+```c
+unsigned float_i2f(int x) {
+	// int 到 float 一定不会溢出，都是 Normalized
+	// 取最高位的1，以下为frac，位置为exp
+	unsigned ans = 0, exp, frac, pos, round;
+	// 1. sign
+	switch(x) {
+		case 0x80000000: return 0xcf000000;
+		case 0: return 0;
+	}
+	if(x < 0) {
+		x = -x;
+		ans = 0x80000000;
+	}
+	// 2. exp 找最高位的1
+	pos = 31;
+	while(!(x >> pos)) pos--; 
+	exp = pos + 0x7f;
+	// 3. frac
+	x ^= (1 << pos);
+	x = x << (31 - pos); // 为了舍入方便，先把有效位往左对齐，再移动回去
+	frac = (x >> 8);
+	round = x & 0xff;
+	if(round > 0x80) frac++; // 四舍 六入
+	else if(round == 0x80 && frac & 1) frac++; // 五成双
+	if(frac >> 23) frac ^= (1 << 23), exp++;
+	ans = ans | (exp << 23) | frac;
+	return ans;
+}
+// 10101 = 1.0101 << 4
+```
+
+## 代码
+
+import { GithubCard } from 'astro-pure/advanced'
+
+<GithubCard repo='TonyYin0418/2025-SPRING-Introduction-to-Computer-System' />
