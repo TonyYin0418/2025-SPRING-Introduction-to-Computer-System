@@ -1,3 +1,14 @@
+---
+title: '计算机系统漫游'
+publishDate: 2025-02-22
+description: '武汉大学2025春季学期 计算机系统基础 第一章 计算机系统漫游'
+tags:
+  - whu
+  - csapp
+draft: true
+language: '中文'
+---
+
 # 1 计算机系统漫游
 
 ## The Compilation System
