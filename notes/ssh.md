@@ -20,6 +20,12 @@ language: '中文'
 
 这里记录了通过反向 SSH 隧道实现云服务器跳板机访问的全过程。适合无 systemd 容器或极简系统，以及需要内网穿透的场景。以下是详细的配置过程和经验分享。
 
+## 0. 我的环境
+
+阿里云服务器，系统为 Ubuntu 24.04 LTS，有弹性公网 IP。
+
+请确保你的本机可以通过 SSH 正常连接这台跳板机，方法不在此展开。
+
 ---
 
 ## 1. 安装 SSH 服务
@@ -54,7 +60,7 @@ ps aux | grep sshd
 
 ## 3. 配置 SSHD 服务参数
 
-编辑 SSH 配置文件 `/etc/ssh/sshd_config`，确保内容包括：
+在希冀平台上，编辑 SSH 配置文件 `/etc/ssh/sshd_config`，确保内容包括：
 
 ```text
 Port 22
@@ -62,6 +68,13 @@ ListenAddress 0.0.0.0
 ListenAddress ::
 PermitRootLogin yes
 PasswordAuthentication yes
+```
+
+在跳板云服务器上，编辑 SSH 配置文件 `/etc/ssh/sshd_config`，确保内容包括：
+
+```text
+GatewayPorts yes
+AllowTcpForwarding yes
 ```
 
 完成修改后保存文件。
@@ -95,6 +108,12 @@ passwd root
 
 ```bash
 ssh -N -R \*:2222:localhost:22 root@yourip
+```
+
+或者使用 `autossh`，好像可以自动保持连接不断。
+
+```bash
+autossh -M 0 -N -o "ServerAliveInterval=30" -o "ServerAliveCountMax=3" -R \*:2222:localhost:22 root@yourip
 ```
 
 如果服务器不支持密码登录，建议先生成 SSH 密钥对方便免密登录：
@@ -145,5 +164,21 @@ ssh-keygen -f ~/.ssh/known_hosts -R '[localhost]:2222'
 
 ## 8. 本地 VS Code 使用跳板机
 
-还可以将云服务器设置为跳板机，配置 ProxyJump。具体方法可以参考网上教程。
+还可以将云服务器设置为跳板机，配置 ProxyJump。这样可以直接在本机以一行指令连接，但是区别不大。
+
+具体方法可以询问大模型或参考网上教程。
+
+---
+
+## 9. 注意事项
+
+平台貌似会定期休眠？原因不明。
+
+如果连接断了，需要先重新启动 sshd 服务，然后重新开启反向隧道。
+
+```bash
+/usr/sbin/sshd
+ssh -N -R \*:2222:localhost:22 root@yourip
+autossh -M 0 -N -o "ServerAliveInterval=30" -o "ServerAliveCountMax=3" -R \*:2222:localhost:22 root@yourip
+```
 
